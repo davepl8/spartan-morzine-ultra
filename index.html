@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spartan Race Pace Calculator</title>
+    <style>
+        :root { 
+            --primary: #ff4500; 
+            --bg: #121212; 
+            --card: #1e1e1e; 
+            --input-bg: #2d2d2d;
+            --text: #ffffff; 
+            --text-muted: #aaaaaa;
+            --safe: #4caf50;
+            --danger: #f44336;
+        }
+        body { font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); color: var(--text); padding: 15px; margin: 0; }
+        .container { max-width: 600px; margin: auto; background: var(--card); padding: 20px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        h2 { text-align: center; color: var(--primary); margin-top: 0; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 1px; }
+        
+        .section { background: rgba(255,255,255,0.03); padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #333; }
+        .section-title { font-size: 0.9rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 10px; font-weight: bold; }
+        
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .flex-pace { display: flex; gap: 5px; align-items: center; }
+        
+        label { display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 5px; }
+        input, select { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #444; background: var(--input-bg); color: var(--text); font-size: 1rem; box-sizing: border-box; }
+        input:focus, select:focus { border-color: var(--primary); outline: none; }
+        
+        .radio-group { display: flex; gap: 15px; margin-bottom: 5px; }
+        .radio-label { display: flex; align-items: center; gap: 5px; cursor: pointer; color: var(--text); }
+        .radio-label input { width: auto; margin: 0; }
+
+        .card-row { background: #252525; padding: 12px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid var(--primary); }
+        .card-header { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 8px; }
+        .card-details { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; font-size: 0.9rem; color: var(--text-muted); }
+        
+        .pace-input-cell { margin-top: 8px; border-top: 1px solid #333; padding-top: 8px; }
+        
+        .safe { color: var(--safe); font-weight: bold; }
+        .danger { color: var(--danger); font-weight: bold; }
+        .passed { color: #ff9800; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Spartan Pace Control</h2>
+    
+    <div class="section">
+        <div class="section-title">Ustawienia główne</div>
+        <div class="grid-2">
+            <div>
+                <label for="start-time">Godzina startu</label>
+                <input type="time" id="start-time" value="07:50">
+            </div>
+            <div>
+                <label for="extra-dist">Dodatkowy dystans (%)</label>
+                <input type="number" id="extra-dist" value="10" min="0" max="50">
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Strategia tempa</div>
+        <div class="radio-group">
+            <label class="radio-label">
+                <input type="radio" name="pace-strategy" value="flat" checked> Stałe tempo
+            </label>
+            <label class="radio-label">
+                <input type="radio" name="pace-strategy" value="split"> Różne tempo (splity)
+            </label>
+        </div>
+        
+        <div id="global-pace-container" class="pace-input-cell">
+            <label>Twoje stałe tempo (min:sek / km)</label>
+            <div class="flex-pace">
+                <input type="number" id="global-min" value="12" min="0" placeholder="min">
+                <span>:</span>
+                <input type="number" id="global-sec" value="00" min="0" max="59" placeholder="sek">
+            </div>
+        </div>
+    </div>
+
+    <div class="section-title">Punkty Kontrolne (Cut-off)</div>
+    <div id="route-results"></div>
+</div>
+
+<script>
+    const cutoffsData = [
+        { id: 1, km: 32.0, time: "17:00" },
+        { id: 2, km: 37.8, time: "18:30" },
+        { id: 3, km: 41.3, time: "19:30" },
+        { id: 4, km: 46.3, time: "21:00" },
+        { id: 5, km: 52.0, time: "22:30" }
+    ];
+
+    const splitPaces = { 1: 720, 2: 720, 3: 720, 4: 720, 5: 720 };
+
+    function timeToMinutes(timeStr) {
+        const [h, m] = timeStr.split(':').map(Number);
+        return h * 60 + m;
+    }
+
+    function minutesToTimeStr(totalMinutes) {
+        const h = Math.floor(totalMinutes / 60) % 24;
+        const m = Math.floor(totalMinutes % 60);
+        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    }
+
+    function renderRoute() {
+        const startTimeStr = document.getElementById('start-time').value;
+        const extraDistPct = parseFloat(document.getElementById('extra-dist').value) || 0;
+        const strategy = document.querySelector('input[name="pace-strategy"]:checked').value;
+        
+        const globalMin = parseInt(document.getElementById('global-min').value) || 0;
+        const globalSec = parseInt(document.getElementById('global-sec').value) || 0;
+        const globalPaceInSeconds = (globalMin * 60) + globalSec;
+
+        const resultsContainer = document.getElementById('route-results');
+        resultsContainer.innerHTML = '';
+
+        let currentTimeInMinutes = timeToMinutes(startTimeStr);
+        let previousKm = 0;
+
+        cutoffsData.forEach(co => {
+            const extraModifier = 1 + (extraDistPct / 100);
+            const nominalSegmentDist = co.km - previousKm;
+            const realSegmentDist = nominalSegmentDist * extraModifier;
+            const realTotalKm = co.km * extraModifier;
+
+            const segmentPaceSeconds = strategy === 'flat' ? globalPaceInSeconds : splitPaces[co.id];
+            const segmentTimeMinutes = (realSegmentDist * segmentPaceSeconds) / 60;
+            currentTimeInMinutes += segmentTimeMinutes;
+
+            const cutoffLimitMinutes = timeToMinutes(co.time);
+            const diff = cutoffLimitMinutes - currentTimeInMinutes;
+
+            let statusClass = 'safe';
+            let statusText = `Zapas: ${Math.floor(diff)} min`;
+
+            if (diff < 0) {
+                statusClass = 'danger';
+                statusText = `BRAK CZASU (${Math.abs(Math.floor(diff))} min po limicie)`;
+            } else if (diff < 30) {
+                statusClass = 'passed';
+            }
+
+            let html = `
+                <div class="card-row">
+                    <div class="card-header">
+                        <span>Punkt #${co.id} (Limit ${co.time})</span>
+                        <span class="${statusClass}">${statusText}</span>
+                    </div>
+                    <div class="card-details">
+                        <div>Dystans realny: <b>${realTotalKm.toFixed(2)} km</b> <small>(+${extraDistPct}%)</small></div>
+                        <div>Twój czas dotarcia: <b>${minutesToTimeStr(currentTimeInMinutes)}</b></div>
+                    </div>
+            `;
+
+            if (strategy === 'split') {
+                const currentMin = Math.floor(splitPaces[co.id] / 60);
+                const currentSec = splitPaces[co.id] % 60;
+                
+                html += `
+                    <div class="pace-input-cell">
+                        <label>Tempo na tym odcinku (od poprzedniego punktu):</label>
+                        <div class="flex-pace">
+                            <input type="number" class="split-min" data-id="${co.id}" value="${currentMin}" min="0">
+                            <span>:</span>
+                            <input type="number" class="split-sec" data-id="${co.id}" value="${String(currentSec).padStart(2, '0')}" min="0" max="59">
+                        </div>
+                    </div>
+                `;
+            }
+
+            html += `</div>`;
+            resultsContainer.innerHTML += html;
+            
+            previousKm = co.km;
+        });
+
+        if (strategy === 'split') {
+            document.querySelectorAll('.split-min, .split-sec').forEach(input => {
+                input.addEventListener('input', function() {
+                    const id = this.getAttribute('data-id');
+                    const minInput = document.querySelector(`.split-min[data-id="${id}"]`);
+                    const secInput = document.querySelector(`.split-sec[data-id="${id}"]`);
+                    
+                    const mins = parseInt(minInput.value) || 0;
+                    const secs = parseInt(secInput.value) || 0;
+                    
+                    splitPaces[id] = (mins * 60) + secs;
+                    renderRoute();
+                });
+            });
+        }
+    }
+
+    document.getElementById('start-time').addEventListener('input', renderRoute);
+    document.getElementById('extra-dist').addEventListener('input', renderRoute);
+    document.getElementById('global-min').addEventListener('input', renderRoute);
+    document.getElementById('global-sec').addEventListener('input', renderRoute);
+    
+    document.querySelectorAll('input[name="pace-strategy"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            const globalContainer = document.getElementById('global-pace-container');
+            if (this.value === 'flat') {
+                globalContainer.style.display = 'block';
+            } else {
+                globalContainer.style.display = 'none';
+            }
+            renderRoute();
+        });
+    });
+
+    renderRoute();
+</script>
+
+</body>
+</html>
