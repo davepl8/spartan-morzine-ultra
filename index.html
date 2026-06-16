@@ -14,6 +14,7 @@
             --text-muted: #aaaaaa;
             --safe: #4caf50;
             --danger: #f44336;
+            --passed: #ff9800;
         }
         body { font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); color: var(--text); padding: 15px; margin: 0; }
         .container { max-width: 600px; margin: auto; background: var(--card); padding: 20px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
@@ -39,15 +40,18 @@
         
         .pace-input-cell { margin-top: 8px; border-top: 1px solid #333; padding-top: 8px; }
         
+        .pitstop-box { background: rgba(255, 152, 0, 0.1); border: 1px dashed var(--passed); padding: 12px; border-radius: 8px; margin-bottom: 10px; }
+        .pitstop-flex { display: flex; align-items: center; gap: 15px; }
+
         .safe { color: var(--safe); font-weight: bold; }
         .danger { color: var(--danger); font-weight: bold; }
-        .passed { color: #ff9800; font-weight: bold; }
+        .passed { color: var(--passed); font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Spartan Pace Control</h2>
+    <h2>Spartan Morzine Ultra 2026</h2>
     
     <div class="section">
         <div class="section-title">Ustawienia główne</div>
@@ -84,7 +88,7 @@
         </div>
     </div>
 
-    <div class="section-title">Punkty Kontrolne (Cut-off)</div>
+    <div class="section-title">Punkty Kontrolne & Przepaki</div>
     <div id="route-results"></div>
 </div>
 
@@ -98,6 +102,10 @@
     ];
 
     const splitPaces = { 1: 720, 2: 720, 3: 720, 4: 720, 5: 720 };
+    
+    // Zmienne dla przepaku po 1. punkcie
+    let hasPitstop = true;
+    let pitstopDuration = 15; // domyślnie 15 minut
 
     function timeToMinutes(timeStr) {
         const [h, m] = timeStr.split(':').map(Number);
@@ -125,7 +133,7 @@
         let currentTimeInMinutes = timeToMinutes(startTimeStr);
         let previousKm = 0;
 
-        cutoffsData.forEach(co => {
+        cutoffsData.forEach((co, index) => {
             const extraModifier = 1 + (extraDistPct / 100);
             const nominalSegmentDist = co.km - previousKm;
             const realSegmentDist = nominalSegmentDist * extraModifier;
@@ -133,6 +141,7 @@
 
             const segmentPaceSeconds = strategy === 'flat' ? globalPaceInSeconds : splitPaces[co.id];
             const segmentTimeMinutes = (realSegmentDist * segmentPaceSeconds) / 60;
+            
             currentTimeInMinutes += segmentTimeMinutes;
 
             const cutoffLimitMinutes = timeToMinutes(co.time);
@@ -166,7 +175,7 @@
                 
                 html += `
                     <div class="pace-input-cell">
-                        <label>Tempo na tym odcinku (od poprzedniego punktu):</label>
+                        <label>Tempo na tym odcinku:</label>
                         <div class="flex-pace">
                             <input type="number" class="split-min" data-id="${co.id}" value="${currentMin}" min="0">
                             <span>:</span>
@@ -178,23 +187,66 @@
 
             html += `</div>`;
             resultsContainer.innerHTML += html;
+
+            // Wstrzyknięcie sekcji przepaku bezpośrednio PO punkcie kontrolnym nr 1
+            if (co.id === 1) {
+                const exitTime = currentTimeInMinutes + (hasPitstop ? pitstopDuration : 0);
+                
+                let pitstopHtml = `
+                    <div class="pitstop-box">
+                        <div class="card-header" style="color: var(--passed); margin-bottom: 5px;">
+                            <span>Strefa Przepaku (Po Punkcie #1)</span>
+                        </div>
+                        <div class="pitstop-flex">
+                            <label class="radio-label" style="margin: 0;">
+                                <input type="checkbox" id="pitstop-toggle" ${hasPitstop ? 'checked' : ''}> Planuję przepak
+                            </label>
+                            <div id="pitstop-input-wrap" style="display: ${hasPitstop ? 'block' : 'none'}; flex-grow: 1;">
+                                <input type="number" id="pitstop-time" value="${pitstopDuration}" min="0" style="padding: 5px; text-align: center;">
+                            </div>
+                        </div>
+                        <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 8px;">
+                            Wyjście z przepaku: <b>${minutesToTimeStr(exitTime)}</b>
+                        </div>
+                    </div>
+                `;
+                resultsContainer.innerHTML += pitstopHtml;
+                
+                // Aktualizujemy czas o spędzony odpoczynek, aby kolejne punkty to uwzględniały
+                if (hasPitstop) {
+                    currentTimeInMinutes += pitstopDuration;
+                }
+            }
             
             previousKm = co.km;
         });
 
+        // Event listenery dla dynamicznych elementów
         if (strategy === 'split') {
             document.querySelectorAll('.split-min, .split-sec').forEach(input => {
                 input.addEventListener('input', function() {
                     const id = this.getAttribute('data-id');
                     const minInput = document.querySelector(`.split-min[data-id="${id}"]`);
                     const secInput = document.querySelector(`.split-sec[data-id="${id}"]`);
-                    
-                    const mins = parseInt(minInput.value) || 0;
-                    const secs = parseInt(secInput.value) || 0;
-                    
-                    splitPaces[id] = (mins * 60) + secs;
+                    splitPaces[id] = ((parseInt(minInput.value) || 0) * 60) + (parseInt(secInput.value) || 0);
                     renderRoute();
                 });
+            });
+        }
+
+        const toggle = document.getElementById('pitstop-toggle');
+        if (toggle) {
+            toggle.addEventListener('change', function() {
+                hasPitstop = this.checked;
+                renderRoute();
+            });
+        }
+
+        const pTime = document.getElementById('pitstop-time');
+        if (pTime) {
+            pTime.addEventListener('input', function() {
+                pitstopDuration = parseInt(this.value) || 0;
+                renderRoute();
             });
         }
     }
@@ -206,12 +258,7 @@
     
     document.querySelectorAll('input[name="pace-strategy"]').forEach(radio => {
         radio.addEventListener('change', function() {
-            const globalContainer = document.getElementById('global-pace-container');
-            if (this.value === 'flat') {
-                globalContainer.style.display = 'block';
-            } else {
-                globalContainer.style.display = 'none';
-            }
+            document.getElementById('global-pace-container').style.display = this.value === 'flat' ? 'block' : 'none';
             renderRoute();
         });
     });
