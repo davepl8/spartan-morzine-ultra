@@ -71,37 +71,21 @@
         .radio-label { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.95rem; }
         .radio-label input { width: auto; accent-color: var(--spartan-purple-light); }
 
-        /* Styl nagłówka rozwijanego edytora */
-        .accordion-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            cursor: pointer;
-            user-select: none;
-        }
-        .accordion-icon {
-            font-size: 1.2rem;
-            transition: transform 0.3s ease;
-            color: var(--gold);
-        }
-        .accordion-content {
-            display: none;
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px solid rgba(255,255,255,0.05);
-        }
-        .accordion-content.open {
-            display: block;
-        }
+        .accordion-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; }
+        .accordion-icon { font-size: 1.2rem; transition: transform 0.3s ease; color: var(--gold); }
+        .accordion-content { display: none; margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.05); }
+        .accordion-content.open { display: block; }
 
-        /* Zarządzanie punktami w edytorze */
         .cutoff-edit-row { background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px; margin-bottom: 10px; border-left: 3px solid var(--text-muted); position: relative;}
+        
         .btn { font-family: 'Oswald', sans-serif; background: var(--spartan-purple); color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; text-transform: uppercase; font-weight: bold; width: 100%; margin-top: 10px; transition: background 0.2s; }
         .btn:hover { background: var(--spartan-purple-light); }
+        .btn-secondary { background: #444; margin-top: 0; padding: 10px; }
+        .btn-secondary:hover { background: #555; }
         .btn-danger { background: var(--danger-red); padding: 4px 8px; font-size: 0.8rem; margin-top: 4px;}
         .btn-danger:hover { background: #ff5252; }
+        .btn-profile-danger { background: var(--danger-red); font-family: 'Oswald', sans-serif; text-transform: uppercase; font-weight: bold; padding: 10px; border-radius: 8px; border: none; color: #fff; cursor: pointer; }
 
-        /* Kafelki Wyników */
         .card-row { background: #22212a; padding: 16px; border-radius: 12px; margin-bottom: 12px; border-left: 5px solid var(--spartan-purple); box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
         .card-header { display: flex; justify-content: space-between; align-items: center; font-family: 'Oswald', sans-serif; font-size: 1.1rem; margin-bottom: 10px; text-transform: uppercase; }
         .card-details { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.9rem; color: var(--text-muted); }
@@ -121,7 +105,26 @@
 <div class="container">
     <div class="header-area">
         <h2>Kalkulator Ultra</h2>
-        <div class="sub-header">Uniwersalny Kreator Trasy</div>
+        <div class="sub-header">Wielozadaniowy Planer Biegów</div>
+    </div>
+    
+    <div class="section" style="border: 1px solid var(--gold); background: rgba(214, 175, 55, 0.02);">
+        <div class="section-title" style="color: var(--gold);">🏃 Wybór i zapis biegu</div>
+        <div style="margin-bottom: 12px;">
+            <label for="profile-select">Wybierz zapisany bieg:</label>
+            <div style="display: flex; gap: 8px;">
+                <select id="profile-select" onchange="loadProfile(this.value)"></select>
+                <button class="btn-profile-danger" onclick="deleteCurrentProfile()">Usuń</button>
+            </div>
+        </div>
+        <hr style="border: 0; border-top: 1px solid rgba(212,175,55,0.2); margin: 15px 0;">
+        <div>
+            <label for="new-profile-name">Zapisz aktualny układ jako nowy bieg:</label>
+            <div style="display: flex; gap: 8px;">
+                <input type="text" id="new-profile-name" placeholder="np. Runmageddon Myślenice, Spartan Bielsko-Biała">
+                <button class="btn btn-secondary" onclick="saveAsNewProfile()">Zapisz</button>
+            </div>
+        </div>
     </div>
     
     <div class="section">
@@ -197,26 +200,118 @@
 </div>
 
 <script>
-    let cutoffsData = JSON.parse(localStorage.getItem('ultra_cutoffs_data')) || [
-        { km: 32.0, time: "17:00", gain: 2273, loss: 2273 },
-        { km: 37.8, time: "18:30", gain: 617, loss: 257 },
-        { km: 41.3, time: "19:30", gain: 360, loss: 43 },
-        { km: 46.3, time: "21:00", gain: 137, loss: 744 },
-        { km: 52.0, time: "22:30", gain: 43, loss: 103 }
-    ];
+    // System profili wielobiegowych z nową nazwą domyślną
+    let profiles = JSON.parse(localStorage.getItem('ultra_profiles')) || {
+        "Spartan Ultra Morzine 2026": {
+            cutoffsData: [
+                { km: 32.0, time: "17:00", gain: 2273, loss: 2273 },
+                { km: 37.8, time: "18:30", gain: 617, loss: 257 },
+                { km: 41.3, time: "19:30", gain: 360, loss: 43 },
+                { km: 46.3, time: "21:00", gain: 137, loss: 744 },
+                { km: 52.0, time: "22:30", gain: 43, loss: 103 }
+            ],
+            splitPaces: {},
+            hasPitstop: true,
+            pitstopDuration: 15,
+            pitstopTargetIndex: 0
+        }
+    };
 
-    let splitPaces = JSON.parse(localStorage.getItem('ultra_split_paces')) || {};
-    
-    let hasPitstop = JSON.parse(localStorage.getItem('ultra_has_pitstop')) !== false; 
-    let pitstopDuration = parseInt(localStorage.getItem('ultra_pitstop_duration')) || 15;
-    let pitstopTargetIndex = parseInt(localStorage.getItem('ultra_pitstop_target_idx')) || 0;
+    let currentProfileName = localStorage.getItem('ultra_current_profile_name') || Object.keys(profiles)[0];
 
-    // Funkcja obsługująca zwijanie/rozwijanie edytora
+    let cutoffsData = [];
+    let splitPaces = {};
+    let hasPitstop = true;
+    let pitstopDuration = 15;
+    let pitstopTargetIndex = 0;
+
+    function initProfiles() {
+        if (!profiles[currentProfileName]) {
+            currentProfileName = Object.keys(profiles)[0];
+        }
+        loadProfileData(currentProfileName);
+        renderProfileSelect();
+    }
+
+    function loadProfileData(name) {
+        const p = profiles[name];
+        cutoffsData = JSON.parse(JSON.stringify(p.cutoffsData));
+        splitPaces = JSON.parse(JSON.stringify(p.splitPaces || {}));
+        hasPitstop = p.hasPitstop !== false;
+        pitstopDuration = p.pitstopDuration || 15;
+        pitstopTargetIndex = p.pitstopTargetIndex || 0;
+        
+        document.getElementById('global-pitstop-toggle').checked = hasPitstop;
+        document.getElementById('global-pitstop-time').value = pitstopDuration;
+    }
+
+    function renderProfileSelect() {
+        const select = document.getElementById('profile-select');
+        select.innerHTML = '';
+        Object.keys(profiles).forEach(name => {
+            const opt = document.createElement('option');
+            opt.value = name;
+            opt.textContent = name;
+            if (name === currentProfileName) opt.selected = true;
+            select.appendChild(opt);
+        });
+    }
+
+    function loadProfile(name) {
+        currentProfileName = name;
+        localStorage.setItem('ultra_current_profile_name', name);
+        loadProfileData(name);
+        renderEditor();
+        renderRoute();
+    }
+
+    function saveActiveProfileState() {
+        profiles[currentProfileName] = {
+            cutoffsData: cutoffsData,
+            splitPaces: splitPaces,
+            hasPitstop: hasPitstop,
+            pitstopDuration: pitstopDuration,
+            pitstopTargetIndex: pitstopTargetIndex
+        };
+        localStorage.setItem('ultra_profiles', JSON.stringify(profiles));
+    }
+
+    function saveAsNewProfile() {
+        const input = document.getElementById('new-profile-name');
+        const name = input.value.trim();
+        if (!name) {
+            alert('Wpisz poprawną nazwę biegu!');
+            return;
+        }
+        currentProfileName = name;
+        localStorage.setItem('ultra_current_profile_name', name);
+        saveActiveProfileState();
+        renderProfileSelect();
+        input.value = '';
+        alert(`Pomyślnie zapisano bieg: "${name}"`);
+    }
+
+    function deleteCurrentProfile() {
+        const keys = Object.keys(profiles);
+        if (keys.length <= 1) {
+            alert('Musisz mieć zapisany przynajmniej jeden bieg na liście!');
+            return;
+        }
+        if (confirm(`Czy na pewno chcesz bezpowrotnie usunąć bieg "${currentProfileName}"?`)) {
+            delete profiles[currentProfileName];
+            currentProfileName = Object.keys(profiles)[0];
+            localStorage.setItem('ultra_current_profile_name', currentProfileName);
+            localStorage.setItem('ultra_profiles', JSON.stringify(profiles));
+            initProfiles();
+            renderEditor();
+            renderRoute();
+        }
+    }
+
     function toggleEditor() {
         const content = document.getElementById('acc-content');
         const icon = document.getElementById('acc-icon');
         const isOpen = content.classList.contains('open');
-        
         if (isOpen) {
             content.classList.remove('open');
             icon.style.transform = 'rotate(0deg)';
@@ -224,14 +319,6 @@
             content.classList.add('open');
             icon.style.transform = 'rotate(90deg)';
         }
-    }
-
-    function saveToLocalStorage() {
-        localStorage.setItem('ultra_cutoffs_data', JSON.stringify(cutoffsData));
-        localStorage.setItem('ultra_split_paces', JSON.stringify(splitPaces));
-        localStorage.setItem('ultra_has_pitstop', JSON.stringify(hasPitstop));
-        localStorage.setItem('ultra_pitstop_duration', pitstopDuration);
-        localStorage.setItem('ultra_pitstop_target_idx', pitstopTargetIndex);
     }
 
     function timeToMinutes(timeStr) {
@@ -248,7 +335,6 @@
     function updatePitstopSelectOptions() {
         const select = document.getElementById('pitstop-target');
         select.innerHTML = '';
-        
         cutoffsData.forEach((co, index) => {
             const opt = document.createElement('option');
             opt.value = index;
@@ -261,7 +347,6 @@
     function renderEditor() {
         const container = document.getElementById('cutoffs-editor-list');
         container.innerHTML = '';
-        
         cutoffsData.sort((a, b) => a.km - b.km);
 
         cutoffsData.forEach((co, index) => {
@@ -292,7 +377,7 @@
             container.appendChild(div);
         });
         updatePitstopSelectOptions();
-        saveToLocalStorage();
+        saveActiveProfileState();
     }
 
     function updateCutoff(index, field, value) {
@@ -339,7 +424,6 @@
         let accumLoss = 0;
 
         document.getElementById('global-pitstop-config').style.display = hasPitstop ? 'grid' : 'none';
-        document.getElementById('global-pitstop-toggle').checked = hasPitstop;
 
         cutoffsData.forEach((co, index) => {
             const pId = index + 1; 
@@ -437,12 +521,12 @@
                     const minInput = document.querySelector(`.split-min[data-id="${id}"]`);
                     const secInput = document.querySelector(`.split-sec[data-id="${id}"]`);
                     splitPaces[id] = ((parseInt(minInput.value) || 0) * 60) + (parseInt(secInput.value) || 0);
-                    saveToLocalStorage();
+                    saveActiveProfileState();
                     renderRoute();
                 });
             });
         }
-        saveToLocalStorage();
+        saveActiveProfileState();
     }
 
     document.getElementById('global-pitstop-toggle').addEventListener('change', function() {
@@ -472,6 +556,7 @@
         });
     });
 
+    initProfiles();
     renderEditor();
     renderRoute();
 </script>
