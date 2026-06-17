@@ -106,7 +106,7 @@
 <div class="container">
     <div class="header-area">
         <h2>Kalkulator Ultra</h2>
-        <div class="sub-header"> Zaplanuj tempo i zdąż przed nocą :) </div>
+        <div class="sub-header">Wielozadaniowy Planer Biegów</div>
     </div>
     
     <div class="section" style="border: 1px solid var(--gold); background: rgba(214, 175, 55, 0.02);">
@@ -123,11 +123,22 @@
         
         <hr style="border: 0; border-top: 1px solid rgba(212,175,55,0.2); margin: 15px 0;">
         
-        <div>
+        <div style="margin-bottom: 15px;">
             <label for="new-profile-name">Utwórz nowy (pusty) bieg:</label>
             <div style="display: flex; gap: 8px;">
-                <input type="text" id="new-profile-name" placeholder="np. Runmageddon Myślenice 2026">
+                <input type="text" id="new-profile-name" placeholder="np. Chudy Wawrzyniec, Ultra Janosik">
                 <button type="button" class="btn" style="margin: 0; width: auto; white-space: nowrap;" onclick="createNewProfile()">Utwórz</button>
+            </div>
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid rgba(212,175,55,0.2); margin: 15px 0;">
+
+        <div>
+            <label>Kopia zapasowa (Plik JSON):</label>
+            <div style="display: flex; gap: 8px;">
+                <button type="button" class="btn-secondary" style="padding: 10px 15px; width: 50%; font-size: 0.85rem;" onclick="exportProfilesToFile()">Zapisz kopię do pliku</button>
+                <button type="button" class="btn-secondary" style="padding: 10px 15px; width: 50%; font-size: 0.85rem;" onclick="document.getElementById('import-file-input').click()">Wczytaj kopię z pliku</button>
+                <input type="file" id="import-file-input" accept=".json" style="display: none;" onchange="importProfilesFromFile(this)">
             </div>
         </div>
     </div>
@@ -236,7 +247,6 @@
     let pitstopDuration = 15;
     let pitstopTargetIndex = 0;
     
-    // Flaga powstrzymująca nadpisywanie w locie
     let isPreventingAutoSave = false;
 
     function initProfiles() {
@@ -248,13 +258,12 @@
     }
 
     function loadProfileData(name) {
-        isPreventingAutoSave = true; // Bezpieczna blokada
+        isPreventingAutoSave = true; 
         
         try {
             const p = profiles[name];
             if (!p) throw new Error("Brak danych profilu");
 
-            // Ochrona przed ewentualnie uszkodzonymi obiektami z pamięci podręcznej
             cutoffsData = p.cutoffsData ? JSON.parse(JSON.stringify(p.cutoffsData)) : [];
             splitPaces = p.splitPaces ? JSON.parse(JSON.stringify(p.splitPaces)) : {};
             hasPitstop = p.hasPitstop !== false;
@@ -280,7 +289,6 @@
         } catch(err) {
             console.error("Wykryto problem z wczytaniem biegu:", err);
         } finally {
-            // Gwarantowane zdjęcie blokady zapisu, niezależnie od błędów
             isPreventingAutoSave = false; 
         }
         
@@ -343,14 +351,13 @@
             if (!confirm(`Bieg o nazwie "${name}" już istnieje. Czy chcesz go nadpisać pustym szablonem?`)) return;
         }
         
-        // Pusty profil - wpisujemy całkowicie od nowa
         profiles[name] = {
             startTime: "08:00",
             extraDist: 0,
             paceStrategy: "flat",
             globalMin: 10,
             globalSec: 0,
-            cutoffsData: [], // pusty panel punktów
+            cutoffsData: [], 
             splitPaces: {},
             hasPitstop: false,
             pitstopDuration: 15,
@@ -380,7 +387,6 @@
         if (confirm(`Czy na pewno chcesz bezpowrotnie usunąć z listy bieg: "${nameToDelete}"?`)) {
             delete profiles[nameToDelete];
             
-            // Jeśli usunięto właśnie przeglądany profil, przełącz na inny
             if(currentProfileName === nameToDelete) {
                 currentProfileName = Object.keys(profiles)[0];
                 localStorage.setItem('ultra_current_profile_name', currentProfileName);
@@ -391,6 +397,59 @@
             renderProfileSelect();
         }
     }
+
+    // --- NOWE FUNKCJE: EKSPORT I IMPORT PLIKÓW ---
+    function exportProfilesToFile() {
+        const dataStr = JSON.stringify(profiles, null, 2);
+        const blob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        
+        const downloadAnchor = document.createElement('a');
+        downloadAnchor.setAttribute("href", url);
+        downloadAnchor.setAttribute("download", "konfiguracja_biegow_ultra.json");
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+        URL.revokeObjectURL(url);
+    }
+
+    function importProfilesFromFile(input) {
+        const file = input.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const importedData = JSON.parse(e.target.result);
+                
+                if (typeof importedData !== 'object' || importedData === null) {
+                    throw new Error("Plik nie zawiera poprawnego obiektu danych.");
+                }
+
+                const mergeData = confirm("Czy chcesz DOPISAĆ zaimportowane biegi do obecnej listy?\n\n[Kliknij OK] - dopisze nowe biegi (nie usunie starych).\n[Kliknij Anuluj] - wyczyści obecną listę i zastąpi ją danymi z pliku.");
+
+                if (mergeData) {
+                    profiles = { ...profiles, ...importedData };
+                } else {
+                    profiles = importedData;
+                }
+
+                localStorage.setItem('ultra_profiles', JSON.stringify(profiles));
+                currentProfileName = Object.keys(profiles)[0];
+                localStorage.setItem('ultra_current_profile_name', currentProfileName);
+                
+                renderProfileSelect();
+                loadProfileData(currentProfileName);
+                alert("Biegi zostały pomyślnie zaimportowane z pliku!");
+                
+            } catch (err) {
+                alert("Błąd odczytu pliku kopii zapasowej. Upewnij się, że to właściwy plik .json\nSzczegóły: " + err.message);
+            }
+        };
+        reader.readAsText(file);
+        input.value = ''; // Reset pola pliku
+    }
+    // ---------------------------------------------
 
     function toggleEditor() {
         const content = document.getElementById('acc-content');
