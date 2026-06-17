@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Spartan Ultra Morzine Pace Control</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&family=Roboto:wght@400;500;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Oswald:wght=400;700&family=Roboto:wght=400;500;700&display=swap');
 
         :root { 
             --spartan-purple: #6a1b9a; /* Charakterystyczny fiolet z grafik Ultra */
@@ -165,7 +165,7 @@
 <div class="container">
     <div class="header-area">
         <h2>Spartan Morzine Ultra</h2>
-        <div class="sub-header">Kalulator tempa</div>
+        <div class="sub-header">Kalkulator tempa</div>
     </div>
     
     <div class="section">
@@ -209,11 +209,11 @@
 
 <script>
     const cutoffsData = [
-        { id: 1, km: 32.0, time: "17:00" },
-        { id: 2, km: 37.8, time: "18:30" },
-        { id: 3, km: 41.3, time: "19:30" },
-        { id: 4, km: 46.3, time: "21:00" },
-        { id: 5, km: 52.0, time: "22:30" }
+        { id: 1, km: 32.0, time: "17:00", gain: 2273, loss: 2273 },
+        { id: 2, km: 37.8, time: "18:30", gain: 617, loss: 257 },
+        { id: 3, km: 41.3, time: "19:30", gain: 360, loss: 43 },
+        { id: 4, km: 46.3, time: "21:00", gain: 137, loss: 744 },
+        { id: 5, km: 52.0, time: "22:30", gain: 43, loss: 103 }
     ];
 
     const splitPaces = { 1: 720, 2: 720, 3: 720, 4: 720, 5: 720 };
@@ -246,12 +246,17 @@
 
         let currentTimeInMinutes = timeToMinutes(startTimeStr);
         let previousKm = 0;
+        let accumGain = 0;
+        let accumLoss = 0;
 
         cutoffsData.forEach((co, index) => {
             const extraModifier = 1 + (extraDistPct / 100);
             const nominalSegmentDist = co.km - previousKm;
             const realSegmentDist = nominalSegmentDist * extraModifier;
             const realTotalKm = co.km * extraModifier;
+
+            accumGain += co.gain;
+            accumLoss += co.loss;
 
             const segmentPaceSeconds = strategy === 'flat' ? globalPaceInSeconds : splitPaces[co.id];
             const segmentTimeMinutes = (realSegmentDist * segmentPaceSeconds) / 60;
@@ -280,6 +285,8 @@
                     <div class="card-details">
                         <div>Dystans sekcji: <b>${realSegmentDist.toFixed(1)} km</b></div>
                         <div>Suma dystansu: <b>${realTotalKm.toFixed(2)} km</b></div>
+                        <div>Sekcja ↑/↓: <b style="color: #ff9100;">+${co.gain}m</b> / <b style="color: #29b6f6;">-${co.loss}m</b></div>
+                        <div>Suma ↑/↓: <b style="color: #ff9100;">+${accumGain}m</b> / <b style="color: #29b6f6;">-${accumLoss}m</b></div>
                         <div style="grid-column: span 2; margin-top: 4px; border-top: 1px solid rgba(255,255,255,0.03); padding-top: 4px;">
                             Prognozowany czas wejścia: <b style="color: #fff; font-size: 1rem;">${minutesToTimeStr(currentTimeInMinutes)}</b>
                         </div>
