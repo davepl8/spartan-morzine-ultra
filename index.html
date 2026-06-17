@@ -121,7 +121,7 @@
         <div>
             <label for="new-profile-name">Zapisz aktualny układ jako nowy bieg:</label>
             <div style="display: flex; gap: 8px;">
-                <input type="text" id="new-profile-name" placeholder="np. Runmageddon Myślenice">
+                <input type="text" id="new-profile-name" placeholder="np. Chudy Wawrzyniec, Ultra Janosik">
                 <button class="btn btn-secondary" onclick="saveAsNewProfile()">Zapisz</button>
             </div>
         </div>
@@ -200,7 +200,6 @@
 </div>
 
 <script>
-    // Konfiguracja bazowa (Morzine)
     const defaultData = [
         { km: 32.0, time: "17:00", gain: 2273, loss: 2273 },
         { km: 37.8, time: "18:30", gain: 617, loss: 257 },
@@ -209,9 +208,13 @@
         { km: 52.0, time: "22:30", gain: 43, loss: 103 }
     ];
 
-    // Główny obiekt profili
     let profiles = JSON.parse(localStorage.getItem('ultra_profiles')) || {
         "Spartan Ultra Morzine 2026": {
+            startTime: "07:50",
+            extraDist: 10,
+            paceStrategy: "flat",
+            globalMin: 12,
+            globalSec: 0,
             cutoffsData: [...defaultData],
             splitPaces: {},
             hasPitstop: true,
@@ -228,26 +231,48 @@
     let hasPitstop = true;
     let pitstopDuration = 15;
     let pitstopTargetIndex = 0;
+    
+    // Blokada zapisu podczas ładowania profilu
+    let isLoadingProfile = false;
 
     function initProfiles() {
         if (!profiles[currentProfileName]) {
             currentProfileName = Object.keys(profiles)[0];
         }
-        loadProfileData(currentProfileName);
         renderProfileSelect();
+        loadProfileData(currentProfileName);
     }
 
     function loadProfileData(name) {
+        isLoadingProfile = true;
         const p = profiles[name];
+        
+        // Przywracanie wartości do zmiennych roboczych
         cutoffsData = JSON.parse(JSON.stringify(p.cutoffsData));
         splitPaces = JSON.parse(JSON.stringify(p.splitPaces || {}));
         hasPitstop = p.hasPitstop !== false;
-        pitstopDuration = p.pitstopDuration || 15;
+        pitstopDuration = p.pitstopDuration !== undefined ? p.pitstopDuration : 15;
         pitstopTargetIndex = p.pitstopTargetIndex || 0;
         
-        // Wymuszenie fizycznej aktualizacji elementów UI formularza głównego
+        // Przywracanie wartości bezpośrednio do pól formularzy HTML
+        document.getElementById('start-time').value = p.startTime || "07:50";
+        document.getElementById('extra-dist').value = p.extraDist !== undefined ? p.extraDist : 10;
+        document.getElementById('global-min').value = p.globalMin !== undefined ? p.globalMin : 12;
+        document.getElementById('global-sec').value = p.globalSec !== undefined ? String(p.globalSec).padStart(2, '0') : "00";
+        
+        const strategy = p.paceStrategy || "flat";
+        document.querySelector(`input[name="pace-strategy"][value="${strategy}"]`).checked = true;
+        document.getElementById('global-pace-container').style.display = strategy === 'flat' ? 'block' : 'none';
+
         document.getElementById('global-pitstop-toggle').checked = hasPitstop;
         document.getElementById('global-pitstop-time').value = pitstopDuration;
+        document.getElementById('global-pitstop-config').style.display = hasPitstop ? 'grid' : 'none';
+
+        updatePitstopSelectOptions();
+        renderEditor();
+        
+        isLoadingProfile = false;
+        renderRoute();
     }
 
     function renderProfileSelect() {
@@ -266,15 +291,17 @@
         currentProfileName = name;
         localStorage.setItem('ultra_current_profile_name', name);
         loadProfileData(name);
-        
-        // Kluczowa poprawka: po zmianie profilu, budujemy od nowa select opcji przepaku dla nowej trasy
-        updatePitstopSelectOptions(); 
-        renderEditor();
-        renderRoute();
     }
 
     function saveActiveProfileState() {
+        if (isLoadingProfile) return; // Kluczowe zabezpieczenie przed nadpisywaniem w pętli
+
         profiles[currentProfileName] = {
+            startTime: document.getElementById('start-time').value,
+            extraDist: parseFloat(document.getElementById('extra-dist').value) || 0,
+            paceStrategy: document.querySelector('input[name="pace-strategy"]:checked').value,
+            globalMin: parseInt(document.getElementById('global-min').value) || 0,
+            globalSec: parseInt(document.getElementById('global-sec').value) || 0,
             cutoffsData: cutoffsData,
             splitPaces: splitPaces,
             hasPitstop: hasPitstop,
@@ -292,8 +319,13 @@
             return;
         }
         
-        // Zapisujemy obecny stan pod nowym kluczem klonując zmienne robocze
+        // Tworzenie głębokiej kopii aktualnego stanu pod nową nazwą
         profiles[name] = {
+            startTime: document.getElementById('start-time').value,
+            extraDist: parseFloat(document.getElementById('extra-dist').value) || 0,
+            paceStrategy: document.querySelector('input[name="pace-strategy"]:checked').value,
+            globalMin: parseInt(document.getElementById('global-min').value) || 0,
+            globalSec: parseInt(document.getElementById('global-sec').value) || 0,
             cutoffsData: JSON.parse(JSON.stringify(cutoffsData)),
             splitPaces: JSON.parse(JSON.stringify(splitPaces)),
             hasPitstop: hasPitstop,
@@ -301,9 +333,9 @@
             pitstopTargetIndex: pitstopTargetIndex
         };
         
+        localStorage.setItem('ultra_profiles', JSON.stringify(profiles));
         currentProfileName = name;
         localStorage.setItem('ultra_current_profile_name', name);
-        localStorage.setItem('ultra_profiles', JSON.stringify(profiles));
         
         renderProfileSelect();
         input.value = '';
@@ -322,10 +354,8 @@
             currentProfileName = Object.keys(profiles)[0];
             localStorage.setItem('ultra_current_profile_name', currentProfileName);
             localStorage.setItem('ultra_profiles', JSON.stringify(profiles));
-            initProfiles();
-            updatePitstopSelectOptions();
-            renderEditor();
-            renderRoute();
+            renderProfileSelect();
+            loadProfile(currentProfileName);
         }
     }
 
@@ -369,7 +399,6 @@
         const container = document.getElementById('cutoffs-editor-list');
         container.innerHTML = '';
         
-        // Sortowanie po dystansie, żeby zachować spójność logiczną
         cutoffsData.sort((a, b) => a.km - b.km);
 
         cutoffsData.forEach((co, index) => {
@@ -399,7 +428,6 @@
             `;
             container.appendChild(div);
         });
-        saveActiveProfileState();
     }
 
     function updateCutoff(index, field, value) {
@@ -408,10 +436,10 @@
         } else {
             cutoffsData[index][field] = value;
         }
-        // Po zmianie dystansu sortujemy bazę, więc indeksy mogą się zmienić - przebudowujemy opcje przepaku
         cutoffsData.sort((a, b) => a.km - b.km);
         updatePitstopSelectOptions();
         renderEditor();
+        saveActiveProfileState();
         renderRoute();
     }
 
@@ -420,6 +448,7 @@
         cutoffsData.push({ km: lastKm, time: "12:00", gain: 100, loss: 100 });
         updatePitstopSelectOptions();
         renderEditor();
+        saveActiveProfileState();
         renderRoute();
     }
 
@@ -430,6 +459,7 @@
         }
         updatePitstopSelectOptions();
         renderEditor();
+        saveActiveProfileState();
         renderRoute();
     }
 
@@ -553,42 +583,42 @@
                 });
             });
         }
-        saveActiveProfileState();
     }
 
-    // Dynamiczne event listenery
+    // Event listenery wyzwalające zapis stanu tylko przy akcji użytkownika
     document.getElementById('global-pitstop-toggle').addEventListener('change', function() {
         hasPitstop = this.checked;
+        saveActiveProfileState();
         renderRoute();
     });
 
     document.getElementById('global-pitstop-time').addEventListener('input', function() {
         pitstopDuration = parseInt(this.value) || 0;
+        saveActiveProfileState();
         renderRoute();
     });
 
     document.getElementById('pitstop-target').addEventListener('change', function() {
         pitstopTargetIndex = parseInt(this.value) || 0;
+        saveActiveProfileState();
         renderRoute();
     });
 
-    document.getElementById('start-time').addEventListener('input', renderRoute);
-    document.getElementById('extra-dist').addEventListener('input', renderRoute);
-    document.getElementById('global-min').addEventListener('input', renderRoute);
-    document.getElementById('global-sec').addEventListener('input', renderRoute);
+    document.getElementById('start-time').addEventListener('input', () => { saveActiveProfileState(); renderRoute(); });
+    document.getElementById('extra-dist').addEventListener('input', () => { saveActiveProfileState(); renderRoute(); });
+    document.getElementById('global-min').addEventListener('input', () => { saveActiveProfileState(); renderRoute(); });
+    document.getElementById('global-sec').addEventListener('input', () => { saveActiveProfileState(); renderRoute(); });
     
     document.querySelectorAll('input[name="pace-strategy"]').forEach(radio => {
         radio.addEventListener('change', function() {
             document.getElementById('global-pace-container').style.display = this.value === 'flat' ? 'block' : 'none';
+            saveActiveProfileState();
             renderRoute();
         });
     });
 
-    // Pełne odpalenie aplikacji na start
+    // Inicjalizacja startowa aplikacji
     initProfiles();
-    updatePitstopSelectOptions();
-    renderEditor();
-    renderRoute();
 </script>
 
 </body>
