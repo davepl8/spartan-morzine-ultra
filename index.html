@@ -80,8 +80,8 @@
         
         .btn { font-family: 'Oswald', sans-serif; background: var(--spartan-purple); color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; text-transform: uppercase; font-weight: bold; width: 100%; margin-top: 10px; transition: background 0.2s; }
         .btn:hover { background: var(--spartan-purple-light); }
-        .btn btn-secondary { background: #444; margin-top: 0; padding: 10px; }
-        .btn btn-secondary:hover { background: #555; }
+        .btn-secondary { background: #444; margin-top: 0; padding: 10px; }
+        .btn-secondary:hover { background: #555; }
         .btn-danger { background: var(--danger-red); padding: 4px 8px; font-size: 0.8rem; margin-top: 4px;}
         .btn-danger:hover { background: #ff5252; }
         .btn-profile-danger { background: var(--danger-red); font-family: 'Oswald', sans-serif; text-transform: uppercase; font-weight: bold; padding: 10px; border-radius: 8px; border: none; color: #fff; cursor: pointer; }
@@ -114,7 +114,7 @@
             <label for="profile-select">Wybierz zapisany bieg:</label>
             <div style="display: flex; gap: 8px;">
                 <select id="profile-select" onchange="loadProfile(this.value)"></select>
-                <button class="btn-profile-danger" onclick="deleteCurrentProfile()">Usuń</button>
+                <button type="button" class="btn-profile-danger" onclick="deleteCurrentProfile()">Usuń</button>
             </div>
         </div>
         <hr style="border: 0; border-top: 1px solid rgba(212,175,55,0.2); margin: 15px 0;">
@@ -122,7 +122,7 @@
             <label for="new-profile-name">Zapisz aktualny układ jako nowy bieg:</label>
             <div style="display: flex; gap: 8px;">
                 <input type="text" id="new-profile-name" placeholder="np. Runmageddon Myślenice 2026">
-                <button class="btn btn-secondary" onclick="saveAsNewProfile()">Zapisz</button>
+                <button type="button" class="btn btn-secondary" onclick="saveAsNewProfile()">Zapisz</button>
             </div>
         </div>
     </div>
@@ -191,7 +191,7 @@
         </div>
         <div class="accordion-content" id="acc-content">
             <div id="cutoffs-editor-list"></div>
-            <button class="btn" onclick="addCutoffRow()">+ Dodaj kolejny punkt</button>
+            <button type="button" class="btn" onclick="addCutoffRow()">+ Dodaj kolejny punkt</button>
         </div>
     </div>
 
@@ -231,7 +231,7 @@
     let pitstopDuration = 15;
     let pitstopTargetIndex = 0;
     
-    // Kluczowa flaga blokująca autozapis podczas zmian profili
+    // Flaga powstrzymująca nadpisywanie w locie
     let isPreventingAutoSave = false;
 
     function initProfiles() {
@@ -243,36 +243,42 @@
     }
 
     function loadProfileData(name) {
-        isPreventingAutoSave = true; // Aktywujemy blokadę na czas wstrzykiwania danych do HTML
-        const p = profiles[name];
+        isPreventingAutoSave = true; // Bezpieczna blokada
         
-        cutoffsData = JSON.parse(JSON.stringify(p.cutoffsData));
-        splitPaces = JSON.parse(JSON.stringify(p.splitPaces || {}));
-        hasPitstop = p.hasPitstop !== false;
-        pitstopDuration = p.pitstopDuration !== undefined ? p.pitstopDuration : 15;
-        pitstopTargetIndex = p.pitstopTargetIndex || 0;
-        
-        document.getElementById('start-time').value = p.startTime || "07:50";
-        document.getElementById('extra-dist').value = p.extraDist !== undefined ? p.extraDist : 10;
-        document.getElementById('global-min').value = p.globalMin !== undefined ? p.globalMin : 12;
-        document.getElementById('global-sec').value = p.globalSec !== undefined ? String(p.globalSec).padStart(2, '0') : "00";
-        
-        const strategy = p.paceStrategy || "flat";
-        if (strategy === "flat") {
-            document.getElementById('strat-flat').checked = true;
-        } else {
-            document.getElementById('strat-split').checked = true;
+        try {
+            const p = profiles[name];
+            if (!p) throw new Error("Brak danych profilu");
+
+            // Ochrona przed ewentualnie uszkodzonymi obiektami z pamięci podręcznej
+            cutoffsData = p.cutoffsData ? JSON.parse(JSON.stringify(p.cutoffsData)) : JSON.parse(JSON.stringify(defaultData));
+            splitPaces = p.splitPaces ? JSON.parse(JSON.stringify(p.splitPaces)) : {};
+            hasPitstop = p.hasPitstop !== false;
+            pitstopDuration = p.pitstopDuration !== undefined ? p.pitstopDuration : 15;
+            pitstopTargetIndex = p.pitstopTargetIndex || 0;
+            
+            document.getElementById('start-time').value = p.startTime || "07:50";
+            document.getElementById('extra-dist').value = p.extraDist !== undefined ? p.extraDist : 10;
+            document.getElementById('global-min').value = p.globalMin !== undefined ? p.globalMin : 12;
+            document.getElementById('global-sec').value = p.globalSec !== undefined ? String(p.globalSec).padStart(2, '0') : "00";
+            
+            const strategy = p.paceStrategy || "flat";
+            document.getElementById('strat-flat').checked = (strategy === "flat");
+            document.getElementById('strat-split').checked = (strategy === "split");
+            document.getElementById('global-pace-container').style.display = strategy === 'flat' ? 'block' : 'none';
+
+            document.getElementById('global-pitstop-toggle').checked = hasPitstop;
+            document.getElementById('global-pitstop-time').value = pitstopDuration;
+            document.getElementById('global-pitstop-config').style.display = hasPitstop ? 'grid' : 'none';
+
+            updatePitstopSelectOptions();
+            renderEditor();
+        } catch(err) {
+            console.error("Wykryto problem z wczytaniem biegu:", err);
+        } finally {
+            // Gwarantowane zdjęcie blokady zapisu, niezależnie od błędów
+            isPreventingAutoSave = false; 
         }
-        document.getElementById('global-pace-container').style.display = strategy === 'flat' ? 'block' : 'none';
-
-        document.getElementById('global-pitstop-toggle').checked = hasPitstop;
-        document.getElementById('global-pitstop-time').value = pitstopDuration;
-        document.getElementById('global-pitstop-config').style.display = hasPitstop ? 'grid' : 'none';
-
-        updatePitstopSelectOptions();
-        renderEditor();
         
-        isPreventingAutoSave = false; // Zdejmujemy blokadę, od teraz każda ręczna edycja się zapisze
         renderRoute();
     }
 
@@ -330,7 +336,6 @@
         const strategyInput = document.querySelector('input[name="pace-strategy"]:checked');
         const activeStrategy = strategyInput ? strategyInput.value : "flat";
 
-        // Bezpośredni zapis nowego profilu ze stanu bieżących formularzy
         profiles[name] = {
             startTime: document.getElementById('start-time').value,
             extraDist: parseFloat(document.getElementById('extra-dist').value) || 0,
@@ -436,7 +441,7 @@
                         <input type="number" value="${co.loss}" onchange="updateCutoff(${index}, 'loss', this.value)">
                     </div>
                 </div>
-                <button class="btn-danger" onclick="deleteCutoff(${index})">Usuń punkt</button>
+                <button type="button" class="btn-danger" onclick="deleteCutoff(${index})">Usuń punkt</button>
             `;
             container.appendChild(div);
         });
