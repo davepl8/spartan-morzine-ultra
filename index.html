@@ -3,19 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spartan Ultra Morzine Pace Control</title>
+    <title>Uniwersalny Kalkulator Tempa Ultra</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Oswald:wght=400;700&family=Roboto:wght=400;500;700&display=swap');
 
         :root { 
-            --spartan-purple: #6a1b9a; /* Charakterystyczny fiolet z grafik Ultra */
+            --spartan-purple: #6a1b9a;
             --spartan-purple-light: #9c4dcc;
             --bg-dark: #0f0f12; 
             --card-bg: #1c1b22; 
             --input-bg: #2b2a33;
             --text-light: #ffffff; 
             --text-muted: #a3a3a3;
-            --gold: #d4af37; /* Złoto z medalu */
+            --gold: #d4af37; 
             --safe-green: #00e676;
             --danger-red: #ff1744;
             --warning-orange: #ff9100;
@@ -31,7 +31,7 @@
         }
 
         .container { 
-            max-width: 550px; 
+            max-width: 600px; 
             margin: auto; 
             background: var(--card-bg); 
             padding: 25px; 
@@ -40,34 +40,9 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.7), 0 0 15px rgba(106, 27, 154, 0.2); 
         }
 
-        /* Nagłówek w stylu Spartan */
-        .header-area {
-            text-align: center;
-            margin-bottom: 25px;
-            margin-top: 10px;
-        }
-
-        h2 { 
-            font-family: 'Oswald', sans-serif;
-            font-size: 2rem;
-            text-align: center; 
-            color: var(--text-light); 
-            margin: 0;
-            text-transform: uppercase; 
-            letter-spacing: 2px;
-            font-weight: 700;
-        }
-
-        .sub-header {
-            font-family: 'Oswald', sans-serif;
-            color: var(--gold);
-            font-size: 1.1rem;
-            letter-spacing: 4px;
-            text-transform: uppercase;
-            margin-top: 2px;
-            margin-bottom: 20px;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
-        }
+        .header-area { text-align: center; margin-bottom: 25px; }
+        h2 { font-family: 'Oswald', sans-serif; font-size: 2rem; margin: 0; text-transform: uppercase; letter-spacing: 2px; }
+        .sub-header { font-family: 'Oswald', sans-serif; color: var(--gold); font-size: 1.1rem; letter-spacing: 4px; text-transform: uppercase; margin-top: 2px; }
         
         .section { 
             background: rgba(255,255,255,0.02); 
@@ -75,97 +50,78 @@
             border-radius: 12px; 
             margin-bottom: 20px; 
             border: 1px solid rgba(255,255,255,0.05); 
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
         }
 
         .section-title { 
-            font-family: 'Oswald', sans-serif;
-            font-size: 1rem; 
-            color: var(--spartan-purple-light); 
-            text-transform: uppercase; 
-            margin-bottom: 12px; 
-            font-weight: 700;
-            letter-spacing: 1px;
+            font-family: 'Oswald', sans-serif; font-size: 1rem; color: var(--spartan-purple-light); text-transform: uppercase; margin-bottom: 12px; font-weight: 700; letter-spacing: 1px;
         }
         
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .grid-3 { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 12px; }
+        .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; }
         .flex-pace { display: flex; gap: 8px; align-items: center; }
         
-        label { display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; font-weight: 500; }
+        label { display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px; text-transform: uppercase; font-weight: 500; }
         input, select { 
-            width: 100%; 
-            padding: 12px; 
-            border-radius: 8px; 
-            border: 1px solid #444; 
-            background: var(--input-bg); 
-            color: var(--text-light); 
-            font-size: 1.1rem; 
-            font-weight: bold;
-            box-sizing: border-box; 
-            transition: all 0.3s ease;
+            width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #444; background: var(--input-bg); color: var(--text-light); font-size: 1rem; font-weight: bold; box-sizing: border-box; 
         }
-        input:focus, select:focus { 
-            border-color: var(--spartan-purple-light); 
-            box-shadow: 0 0 8px rgba(156, 77, 204, 0.5);
-            outline: none; 
-        }
+        input:focus, select:focus { border-color: var(--spartan-purple-light); outline: none; }
         
-        /* Strategia wybór */
         .radio-group { display: flex; gap: 20px; margin-bottom: 5px; }
-        .radio-label { display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text-light); font-weight: 500; font-size: 0.95rem; }
-        .radio-label input { width: auto; margin: 0; accent-color: var(--spartan-purple-light); }
+        .radio-label { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.95rem; }
+        .radio-label input { width: auto; accent-color: var(--spartan-purple-light); }
 
-        /* Kafelki punktów kontrolnych */
-        .card-row { 
-            background: #22212a; 
-            padding: 16px; 
-            border-radius: 12px; 
-            margin-bottom: 12px; 
-            border-left: 5px solid var(--spartan-purple); 
-            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-            transition: transform 0.2s ease;
-        }
-        .card-row:hover {
-            transform: translateX(3px);
-        }
-        .card-header { 
-            display: flex; 
-            justify-content: space-between; 
+        /* Styl nagłówka rozwijanego edytora */
+        .accordion-header {
+            display: flex;
+            justify-content: space-between;
             align-items: center;
-            font-family: 'Oswald', sans-serif;
-            font-size: 1.1rem;
-            margin-bottom: 10px; 
-            text-transform: uppercase;
+            cursor: pointer;
+            user-select: none;
         }
+        .accordion-icon {
+            font-size: 1.2rem;
+            transition: transform 0.3s ease;
+            color: var(--gold);
+        }
+        .accordion-content {
+            display: none;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255,255,255,0.05);
+        }
+        .accordion-content.open {
+            display: block;
+        }
+
+        /* Zarządzanie punktami w edytorze */
+        .cutoff-edit-row { background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px; margin-bottom: 10px; border-left: 3px solid var(--text-muted); position: relative;}
+        .btn { font-family: 'Oswald', sans-serif; background: var(--spartan-purple); color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; text-transform: uppercase; font-weight: bold; width: 100%; margin-top: 10px; transition: background 0.2s; }
+        .btn:hover { background: var(--spartan-purple-light); }
+        .btn-danger { background: var(--danger-red); padding: 4px 8px; font-size: 0.8rem; margin-top: 4px;}
+        .btn-danger:hover { background: #ff5252; }
+
+        /* Kafelki Wyników */
+        .card-row { background: #22212a; padding: 16px; border-radius: 12px; margin-bottom: 12px; border-left: 5px solid var(--spartan-purple); box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
+        .card-header { display: flex; justify-content: space-between; align-items: center; font-family: 'Oswald', sans-serif; font-size: 1.1rem; margin-bottom: 10px; text-transform: uppercase; }
         .card-details { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.9rem; color: var(--text-muted); }
         .card-details b { color: var(--text-light); }
-        
         .pace-input-cell { margin-top: 12px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 12px; }
         
-        /* Przepak Box */
-        .pitstop-box { 
-            background: rgba(212, 175, 55, 0.04); 
-            border: 1px dashed var(--gold); 
-            padding: 16px; 
-            border-radius: 12px; 
-            margin-bottom: 15px; 
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-        }
-        .pitstop-flex { display: flex; align-items: center; gap: 20px; }
-        .pitstop-box #pitstop-toggle { accent-color: var(--gold); }
+        .pitstop-box { background: rgba(212, 175, 55, 0.04); border: 1px dashed var(--gold); padding: 16px; border-radius: 12px; margin-bottom: 15px; }
+        .pitstop-flex { display: flex; align-items: center; gap: 15px; }
 
-        /* Statusy czasu */
-        .safe { color: var(--safe-green); text-shadow: 0 0 4px rgba(0, 230, 118, 0.2); }
-        .danger { color: var(--danger-red); text-shadow: 0 0 4px rgba(255, 23, 68, 0.2); }
-        .passed { color: var(--warning-orange); text-shadow: 0 0 4px rgba(255, 145, 0, 0.2); }
+        .safe { color: var(--safe-green); }
+        .danger { color: var(--danger-red); }
+        .passed { color: var(--warning-orange); }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="header-area">
-        <h2>Spartan Morzine Ultra</h2>
-        <div class="sub-header">Kalkulator tempa</div>
+        <h2>Kalkulator Ultra</h2>
+        <div class="sub-header">Uniwersalny Kreator Trasy</div>
     </div>
     
     <div class="section">
@@ -178,6 +134,28 @@
             <div>
                 <label for="extra-dist">Dodatkowy dystans (%)</label>
                 <input type="number" id="extra-dist" value="10" min="0" max="50">
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">🔧 Logistyka przepaku</div>
+        <div style="margin-bottom: 12px;">
+            <label class="radio-label">
+                <input type="checkbox" id="global-pitstop-toggle" checked> Włącz przepak na trasie
+            </label>
+        </div>
+        <div id="global-pitstop-config" class="grid-3">
+            <div>
+                <label for="pitstop-target">Po którym punkcie?</label>
+                <select id="pitstop-target"></select>
+            </div>
+            <div>
+                <label for="global-pitstop-time">Czas przerwy</label>
+                <div class="flex-pace">
+                    <input type="number" id="global-pitstop-time" value="15" min="0">
+                    <span style="font-size: 0.85rem; color: var(--text-muted)">min</span>
+                </div>
             </div>
         </div>
     </div>
@@ -196,30 +174,65 @@
         <div id="global-pace-container" class="pace-input-cell">
             <label>Twoje stałe tempo (min:sek / km)</label>
             <div class="flex-pace">
-                <input type="number" id="global-min" value="12" min="0" placeholder="min">
-                <span style="font-weight: bold; font-size: 1.2rem; color: var(--spartan-purple-light)">:</span>
-                <input type="number" id="global-sec" value="00" min="0" max="59" placeholder="sek">
+                <input type="number" id="global-min" value="12" min="0">
+                <span style="font-weight: bold; color: var(--spartan-purple-light)">:</span>
+                <input type="number" id="global-sec" value="00" min="0" max="59">
             </div>
         </div>
     </div>
 
-    <div class="section-title" style="margin-bottom: 15px;">Plan Trasy & Limity</div>
+    <div class="section" id="editor-section">
+        <div class="accordion-header" onclick="toggleEditor()">
+            <div class="section-title" style="margin: 0;">🛠️ Edytuj punkty kontrolne & limity</div>
+            <div class="accordion-icon" id="acc-icon">▶</div>
+        </div>
+        <div class="accordion-content" id="acc-content">
+            <div id="cutoffs-editor-list"></div>
+            <button class="btn" onclick="addCutoffRow()">+ Dodaj kolejny punkt</button>
+        </div>
+    </div>
+
+    <div class="section-title" style="margin-bottom: 15px;">Prognoza i Plan Biegu</div>
     <div id="route-results"></div>
 </div>
 
 <script>
-    const cutoffsData = [
-        { id: 1, km: 32.0, time: "17:00", gain: 2273, loss: 2273 },
-        { id: 2, km: 37.8, time: "18:30", gain: 617, loss: 257 },
-        { id: 3, km: 41.3, time: "19:30", gain: 360, loss: 43 },
-        { id: 4, km: 46.3, time: "21:00", gain: 137, loss: 744 },
-        { id: 5, km: 52.0, time: "22:30", gain: 43, loss: 103 }
+    let cutoffsData = JSON.parse(localStorage.getItem('ultra_cutoffs_data')) || [
+        { km: 32.0, time: "17:00", gain: 2273, loss: 2273 },
+        { km: 37.8, time: "18:30", gain: 617, loss: 257 },
+        { km: 41.3, time: "19:30", gain: 360, loss: 43 },
+        { km: 46.3, time: "21:00", gain: 137, loss: 744 },
+        { km: 52.0, time: "22:30", gain: 43, loss: 103 }
     ];
 
-    const splitPaces = { 1: 720, 2: 720, 3: 720, 4: 720, 5: 720 };
+    let splitPaces = JSON.parse(localStorage.getItem('ultra_split_paces')) || {};
     
-    let hasPitstop = true;
-    let pitstopDuration = 15;
+    let hasPitstop = JSON.parse(localStorage.getItem('ultra_has_pitstop')) !== false; 
+    let pitstopDuration = parseInt(localStorage.getItem('ultra_pitstop_duration')) || 15;
+    let pitstopTargetIndex = parseInt(localStorage.getItem('ultra_pitstop_target_idx')) || 0;
+
+    // Funkcja obsługująca zwijanie/rozwijanie edytora
+    function toggleEditor() {
+        const content = document.getElementById('acc-content');
+        const icon = document.getElementById('acc-icon');
+        const isOpen = content.classList.contains('open');
+        
+        if (isOpen) {
+            content.classList.remove('open');
+            icon.style.transform = 'rotate(0deg)';
+        } else {
+            content.classList.add('open');
+            icon.style.transform = 'rotate(90deg)';
+        }
+    }
+
+    function saveToLocalStorage() {
+        localStorage.setItem('ultra_cutoffs_data', JSON.stringify(cutoffsData));
+        localStorage.setItem('ultra_split_paces', JSON.stringify(splitPaces));
+        localStorage.setItem('ultra_has_pitstop', JSON.stringify(hasPitstop));
+        localStorage.setItem('ultra_pitstop_duration', pitstopDuration);
+        localStorage.setItem('ultra_pitstop_target_idx', pitstopTargetIndex);
+    }
 
     function timeToMinutes(timeStr) {
         const [h, m] = timeStr.split(':').map(Number);
@@ -230,6 +243,82 @@
         const h = Math.floor(totalMinutes / 60) % 24;
         const m = Math.floor(totalMinutes % 60);
         return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    }
+
+    function updatePitstopSelectOptions() {
+        const select = document.getElementById('pitstop-target');
+        select.innerHTML = '';
+        
+        cutoffsData.forEach((co, index) => {
+            const opt = document.createElement('option');
+            opt.value = index;
+            opt.textContent = `Po Punkcie #${index + 1} (${co.km} km)`;
+            if (index === pitstopTargetIndex) opt.selected = true;
+            select.appendChild(opt);
+        });
+    }
+
+    function renderEditor() {
+        const container = document.getElementById('cutoffs-editor-list');
+        container.innerHTML = '';
+        
+        cutoffsData.sort((a, b) => a.km - b.km);
+
+        cutoffsData.forEach((co, index) => {
+            const div = document.createElement('div');
+            div.className = 'cutoff-edit-row';
+            div.innerHTML = `
+                <div style="font-size:0.8rem; font-weight:bold; color:var(--gold); margin-bottom:6px;">PUNKT KONTROLNY #${index + 1}</div>
+                <div class="grid-4">
+                    <div>
+                        <label>Dystans (km)</label>
+                        <input type="number" step="0.1" value="${co.km}" onchange="updateCutoff(${index}, 'km', this.value)">
+                    </div>
+                    <div>
+                        <label>Limit (HH:MM)</label>
+                        <input type="time" value="${co.time}" onchange="updateCutoff(${index}, 'time', this.value)">
+                    </div>
+                    <div>
+                        <label>Podejście (m)</label>
+                        <input type="number" value="${co.gain}" onchange="updateCutoff(${index}, 'gain', this.value)">
+                    </div>
+                    <div>
+                        <label>Zejście (m)</label>
+                        <input type="number" value="${co.loss}" onchange="updateCutoff(${index}, 'loss', this.value)">
+                    </div>
+                </div>
+                <button class="btn-danger" onclick="deleteCutoff(${index})">Usuń punkt</button>
+            `;
+            container.appendChild(div);
+        });
+        updatePitstopSelectOptions();
+        saveToLocalStorage();
+    }
+
+    function updateCutoff(index, field, value) {
+        if (field === 'km' || field === 'gain' || field === 'loss') {
+            cutoffsData[index][field] = parseFloat(value) || 0;
+        } else {
+            cutoffsData[index][field] = value;
+        }
+        renderEditor();
+        renderRoute();
+    }
+
+    function addCutoffRow() {
+        const lastKm = cutoffsData.length > 0 ? cutoffsData[cutoffsData.length - 1].km + 5 : 10;
+        cutoffsData.push({ km: lastKm, time: "12:00", gain: 100, loss: 100 });
+        renderEditor();
+        renderRoute();
+    }
+
+    function deleteCutoff(index) {
+        cutoffsData.splice(index, 1);
+        if (pitstopTargetIndex >= cutoffsData.length && cutoffsData.length > 0) {
+            pitstopTargetIndex = cutoffsData.length - 1;
+        }
+        renderEditor();
+        renderRoute();
     }
 
     function renderRoute() {
@@ -249,7 +338,13 @@
         let accumGain = 0;
         let accumLoss = 0;
 
+        document.getElementById('global-pitstop-config').style.display = hasPitstop ? 'grid' : 'none';
+        document.getElementById('global-pitstop-toggle').checked = hasPitstop;
+
         cutoffsData.forEach((co, index) => {
+            const pId = index + 1; 
+            if (!splitPaces[pId]) splitPaces[pId] = 720; 
+
             const extraModifier = 1 + (extraDistPct / 100);
             const nominalSegmentDist = co.km - previousKm;
             const realSegmentDist = nominalSegmentDist * extraModifier;
@@ -258,7 +353,7 @@
             accumGain += co.gain;
             accumLoss += co.loss;
 
-            const segmentPaceSeconds = strategy === 'flat' ? globalPaceInSeconds : splitPaces[co.id];
+            const segmentPaceSeconds = strategy === 'flat' ? globalPaceInSeconds : splitPaces[pId];
             const segmentTimeMinutes = (realSegmentDist * segmentPaceSeconds) / 60;
             
             currentTimeInMinutes += segmentTimeMinutes;
@@ -277,33 +372,33 @@
             }
 
             let html = `
-                <div class="card-row" style="border-left-color: ${co.id === 1 ? 'var(--gold)' : 'var(--spartan-purple)'}">
+                <div class="card-row" style="border-left-color: ${index === pitstopTargetIndex && hasPitstop ? 'var(--gold)' : 'var(--spartan-purple)'}">
                     <div class="card-header">
-                        <span>Punkt #${co.id} <span style="color: var(--text-muted); font-size:0.85rem;">(Limit ${co.time})</span></span>
+                        <span>Punkt #${pId} <span style="color: var(--text-muted); font-size:0.85rem;">(Limit ${co.time})</span></span>
                         <span class="${statusClass}">${statusText}</span>
                     </div>
                     <div class="card-details">
-                        <div>Dystans sekcji: <b>${realSegmentDist.toFixed(1)} km</b></div>
+                        <div>Odcinek: <b>${realSegmentDist.toFixed(1)} km</b></div>
                         <div>Suma dystansu: <b>${realTotalKm.toFixed(2)} km</b></div>
-                        <div>Sekcja ↑/↓: <b style="color: #ff9100;">+${co.gain}m</b> / <b style="color: #29b6f6;">-${co.loss}m</b></div>
+                        <div>Odcinek ↑/↓: <b style="color: #ff9100;">+${co.gain}m</b> / <b style="color: #29b6f6;">-${co.loss}m</b></div>
                         <div>Suma ↑/↓: <b style="color: #ff9100;">+${accumGain}m</b> / <b style="color: #29b6f6;">-${accumLoss}m</b></div>
                         <div style="grid-column: span 2; margin-top: 4px; border-top: 1px solid rgba(255,255,255,0.03); padding-top: 4px;">
-                            Prognozowany czas wejścia: <b style="color: #fff; font-size: 1rem;">${minutesToTimeStr(currentTimeInMinutes)}</b>
+                            Prognozowane dotarcie: <b style="color: #fff; font-size: 1rem;">${minutesToTimeStr(currentTimeInMinutes)}</b>
                         </div>
                     </div>
             `;
 
             if (strategy === 'split') {
-                const currentMin = Math.floor(splitPaces[co.id] / 60);
-                const currentSec = splitPaces[co.id] % 60;
+                const currentMin = Math.floor(splitPaces[pId] / 60);
+                const currentSec = splitPaces[pId] % 60;
                 
                 html += `
                     <div class="pace-input-cell">
                         <label>Tempo na tym odcinku:</label>
                         <div class="flex-pace">
-                            <input type="number" class="split-min" data-id="${co.id}" value="${currentMin}" min="0">
+                            <input type="number" class="split-min" data-id="${pId}" value="${currentMin}" min="0">
                             <span style="color: var(--spartan-purple-light)">:</span>
-                            <input type="number" class="split-sec" data-id="${co.id}" value="${String(currentSec).padStart(2, '0')}" min="0" max="59">
+                            <input type="number" class="split-sec" data-id="${pId}" value="${String(currentSec).padStart(2, '0')}" min="0" max="59">
                         </div>
                     </div>
                 `;
@@ -312,35 +407,24 @@
             html += `</div>`;
             resultsContainer.innerHTML += html;
 
-            if (co.id === 1) {
-                const exitTime = currentTimeInMinutes + (hasPitstop ? pitstopDuration : 0);
+            if (hasPitstop && index === pitstopTargetIndex) {
+                const exitTime = currentTimeInMinutes + pitstopDuration;
                 
                 let pitstopHtml = `
                     <div class="pitstop-box">
                         <div class="card-header" style="color: var(--gold); margin-bottom: 5px; font-size: 1rem;">
-                            <span>🔧 Przepak (Po Punkcie #1)</span>
+                            <span>🔧 Planowany przepak (Drop Bag)</span>
                         </div>
-                        <div class="pitstop-flex">
-                            <label class="radio-label" style="margin: 0;">
-                                <input type="checkbox" id="pitstop-toggle" ${hasPitstop ? 'checked' : ''}> Planuję przerwę
-                            </label>
-                            <div id="pitstop-input-wrap" style="display: ${hasPitstop ? 'block' : 'none'}; flex-grow: 1;">
-                                <div class="flex-pace">
-                                    <input type="number" id="pitstop-time" value="${pitstopDuration}" min="0" style="padding: 8px; text-align: center;">
-                                    <span style="font-size: 0.85rem; color: var(--text-muted)">min</span>
-                                </div>
-                            </div>
+                        <div style="font-size: 0.85rem; color: var(--text-light);">
+                            Czas postoju: <b>${pitstopDuration} min</b>
                         </div>
                         <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 10px; border-top: 1px solid rgba(212,175,55,0.1); padding-top: 6px;">
-                            Prognozowane wyjście z przepaku: <b style="color: var(--gold);">${minutesToTimeStr(exitTime)}</b>
+                            Planowane wyjście z przepaku: <b style="color: var(--gold);">${minutesToTimeStr(exitTime)}</b>
                         </div>
                     </div>
                 `;
                 resultsContainer.innerHTML += pitstopHtml;
-                
-                if (hasPitstop) {
-                    currentTimeInMinutes += pitstopDuration;
-                }
+                currentTimeInMinutes += pitstopDuration;
             }
             
             previousKm = co.km;
@@ -353,27 +437,28 @@
                     const minInput = document.querySelector(`.split-min[data-id="${id}"]`);
                     const secInput = document.querySelector(`.split-sec[data-id="${id}"]`);
                     splitPaces[id] = ((parseInt(minInput.value) || 0) * 60) + (parseInt(secInput.value) || 0);
+                    saveToLocalStorage();
                     renderRoute();
                 });
             });
         }
-
-        const toggle = document.getElementById('pitstop-toggle');
-        if (toggle) {
-            toggle.addEventListener('change', function() {
-                hasPitstop = this.checked;
-                renderRoute();
-            });
-        }
-
-        const pTime = document.getElementById('pitstop-time');
-        if (pTime) {
-            pTime.addEventListener('input', function() {
-                pitstopDuration = parseInt(this.value) || 0;
-                renderRoute();
-            });
-        }
+        saveToLocalStorage();
     }
+
+    document.getElementById('global-pitstop-toggle').addEventListener('change', function() {
+        hasPitstop = this.checked;
+        renderRoute();
+    });
+
+    document.getElementById('global-pitstop-time').addEventListener('input', function() {
+        pitstopDuration = parseInt(this.value) || 0;
+        renderRoute();
+    });
+
+    document.getElementById('pitstop-target').addEventListener('change', function() {
+        pitstopTargetIndex = parseInt(this.value) || 0;
+        renderRoute();
+    });
 
     document.getElementById('start-time').addEventListener('input', renderRoute);
     document.getElementById('extra-dist').addEventListener('input', renderRoute);
@@ -387,6 +472,7 @@
         });
     });
 
+    renderEditor();
     renderRoute();
 </script>
 
