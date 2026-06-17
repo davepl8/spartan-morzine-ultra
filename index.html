@@ -80,11 +80,12 @@
         
         .btn { font-family: 'Oswald', sans-serif; background: var(--spartan-purple); color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; text-transform: uppercase; font-weight: bold; width: 100%; margin-top: 10px; transition: background 0.2s; }
         .btn:hover { background: var(--spartan-purple-light); }
-        .btn-secondary { background: #444; margin-top: 0; padding: 10px; }
+        .btn-secondary { font-family: 'Oswald', sans-serif; text-transform: uppercase; font-weight: bold; background: #444; color: white; border: none; border-radius: 8px; cursor: pointer; transition: background 0.2s; }
         .btn-secondary:hover { background: #555; }
         .btn-danger { background: var(--danger-red); padding: 4px 8px; font-size: 0.8rem; margin-top: 4px;}
         .btn-danger:hover { background: #ff5252; }
-        .btn-profile-danger { background: var(--danger-red); font-family: 'Oswald', sans-serif; text-transform: uppercase; font-weight: bold; padding: 10px; border-radius: 8px; border: none; color: #fff; cursor: pointer; }
+        .btn-profile-danger { background: var(--danger-red); font-family: 'Oswald', sans-serif; text-transform: uppercase; font-weight: bold; padding: 10px; border-radius: 8px; border: none; color: #fff; cursor: pointer; transition: background 0.2s; }
+        .btn-profile-danger:hover { background: #ff5252; }
 
         .card-row { background: #22212a; padding: 16px; border-radius: 12px; margin-bottom: 12px; border-left: 5px solid var(--spartan-purple); box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
         .card-header { display: flex; justify-content: space-between; align-items: center; font-family: 'Oswald', sans-serif; font-size: 1.1rem; margin-bottom: 10px; text-transform: uppercase; }
@@ -110,19 +111,23 @@
     
     <div class="section" style="border: 1px solid var(--gold); background: rgba(214, 175, 55, 0.02);">
         <div class="section-title" style="color: var(--gold);">🏃 Wybór i zapis biegu</div>
-        <div style="margin-bottom: 12px;">
-            <label for="profile-select">Wybierz zapisany bieg:</label>
+        
+        <div style="margin-bottom: 15px;">
+            <label for="profile-select">Wybierz bieg z listy i wczytaj:</label>
             <div style="display: flex; gap: 8px;">
-                <select id="profile-select" onchange="loadProfile(this.value)"></select>
-                <button type="button" class="btn-profile-danger" onclick="deleteCurrentProfile()">Usuń</button>
+                <select id="profile-select"></select>
+                <button type="button" class="btn-secondary" style="padding: 10px 15px; white-space: nowrap;" onclick="loadSelectedProfile()">Wczytaj bieg</button>
+                <button type="button" class="btn-profile-danger" onclick="deleteSelectedProfile()">Usuń</button>
             </div>
         </div>
+        
         <hr style="border: 0; border-top: 1px solid rgba(212,175,55,0.2); margin: 15px 0;">
+        
         <div>
-            <label for="new-profile-name">Zapisz aktualny układ jako nowy bieg:</label>
+            <label for="new-profile-name">Utwórz nowy (pusty) bieg:</label>
             <div style="display: flex; gap: 8px;">
-                <input type="text" id="new-profile-name" placeholder="np. Chudy Wawrzyniec, Ultra Janosik">
-                <button type="button" class="btn btn-secondary" onclick="saveAsNewProfile()">Zapisz</button>
+                <input type="text" id="new-profile-name" placeholder="np. Runmageddon Myślenice 2026">
+                <button type="button" class="btn" style="margin: 0; width: auto; white-space: nowrap;" onclick="createNewProfile()">Utwórz</button>
             </div>
         </div>
     </div>
@@ -250,7 +255,7 @@
             if (!p) throw new Error("Brak danych profilu");
 
             // Ochrona przed ewentualnie uszkodzonymi obiektami z pamięci podręcznej
-            cutoffsData = p.cutoffsData ? JSON.parse(JSON.stringify(p.cutoffsData)) : JSON.parse(JSON.stringify(defaultData));
+            cutoffsData = p.cutoffsData ? JSON.parse(JSON.stringify(p.cutoffsData)) : [];
             splitPaces = p.splitPaces ? JSON.parse(JSON.stringify(p.splitPaces)) : {};
             hasPitstop = p.hasPitstop !== false;
             pitstopDuration = p.pitstopDuration !== undefined ? p.pitstopDuration : 15;
@@ -294,10 +299,15 @@
         });
     }
 
-    function loadProfile(name) {
-        currentProfileName = name;
-        localStorage.setItem('ultra_current_profile_name', name);
-        loadProfileData(name);
+    function loadSelectedProfile() {
+        const select = document.getElementById('profile-select');
+        const name = select.value;
+        if(name) {
+            currentProfileName = name;
+            localStorage.setItem('ultra_current_profile_name', name);
+            loadProfileData(name);
+            alert(`Wczytano układ dla: "${name}"`);
+        }
     }
 
     function saveActiveProfileState() {
@@ -321,7 +331,7 @@
         localStorage.setItem('ultra_profiles', JSON.stringify(profiles));
     }
 
-    function saveAsNewProfile() {
+    function createNewProfile() {
         const input = document.getElementById('new-profile-name');
         const name = input.value.trim();
         if (!name) {
@@ -330,23 +340,21 @@
         }
 
         if (profiles[name]) {
-            if (!confirm(`Bieg o nazwie "${name}" już istnieje. Czy chcesz go nadpisać?`)) return;
+            if (!confirm(`Bieg o nazwie "${name}" już istnieje. Czy chcesz go nadpisać pustym szablonem?`)) return;
         }
         
-        const strategyInput = document.querySelector('input[name="pace-strategy"]:checked');
-        const activeStrategy = strategyInput ? strategyInput.value : "flat";
-
+        // Pusty profil - wpisujemy całkowicie od nowa
         profiles[name] = {
-            startTime: document.getElementById('start-time').value,
-            extraDist: parseFloat(document.getElementById('extra-dist').value) || 0,
-            paceStrategy: activeStrategy,
-            globalMin: parseInt(document.getElementById('global-min').value) || 0,
-            globalSec: parseInt(document.getElementById('global-sec').value) || 0,
-            cutoffsData: JSON.parse(JSON.stringify(cutoffsData)),
-            splitPaces: JSON.parse(JSON.stringify(splitPaces)),
-            hasPitstop: hasPitstop,
-            pitstopDuration: pitstopDuration,
-            pitstopTargetIndex: pitstopTargetIndex
+            startTime: "08:00",
+            extraDist: 0,
+            paceStrategy: "flat",
+            globalMin: 10,
+            globalSec: 0,
+            cutoffsData: [], // pusty panel punktów
+            splitPaces: {},
+            hasPitstop: false,
+            pitstopDuration: 15,
+            pitstopTargetIndex: 0
         };
         
         localStorage.setItem('ultra_profiles', JSON.stringify(profiles));
@@ -357,22 +365,30 @@
         
         renderProfileSelect();
         loadProfileData(name);
-        alert(`Pomyślnie utworzono nowy bieg: "${name}" i automatycznie na niego przełączono.`);
+        alert(`Utworzono nowy, pusty bieg: "${name}". Wprowadź teraz jego dane ręcznie.`);
     }
 
-    function deleteCurrentProfile() {
+    function deleteSelectedProfile() {
+        const select = document.getElementById('profile-select');
+        const nameToDelete = select.value;
+
         const keys = Object.keys(profiles);
         if (keys.length <= 1) {
             alert('Musisz mieć zapisany przynajmniej jeden bieg na liście!');
             return;
         }
-        if (confirm(`Czy na pewno chcesz bezpowrotnie usunąć bieg "${currentProfileName}"?`)) {
-            delete profiles[currentProfileName];
-            currentProfileName = Object.keys(profiles)[0];
-            localStorage.setItem('ultra_current_profile_name', currentProfileName);
+        if (confirm(`Czy na pewno chcesz bezpowrotnie usunąć z listy bieg: "${nameToDelete}"?`)) {
+            delete profiles[nameToDelete];
+            
+            // Jeśli usunięto właśnie przeglądany profil, przełącz na inny
+            if(currentProfileName === nameToDelete) {
+                currentProfileName = Object.keys(profiles)[0];
+                localStorage.setItem('ultra_current_profile_name', currentProfileName);
+                loadProfileData(currentProfileName);
+            }
+            
             localStorage.setItem('ultra_profiles', JSON.stringify(profiles));
             renderProfileSelect();
-            loadProfile(currentProfileName);
         }
     }
 
@@ -390,8 +406,9 @@
     }
 
     function timeToMinutes(timeStr) {
+        if (!timeStr) return 0;
         const [h, m] = timeStr.split(':').map(Number);
-        return h * 60 + m;
+        return (h * 60) + (m || 0);
     }
 
     function minutesToTimeStr(totalMinutes) {
@@ -403,6 +420,13 @@
     function updatePitstopSelectOptions() {
         const select = document.getElementById('pitstop-target');
         select.innerHTML = '';
+        if(cutoffsData.length === 0) {
+            const opt = document.createElement('option');
+            opt.textContent = 'Brak punktów';
+            select.appendChild(opt);
+            return;
+        }
+
         cutoffsData.forEach((co, index) => {
             const opt = document.createElement('option');
             opt.value = index;
@@ -417,6 +441,10 @@
         container.innerHTML = '';
         
         cutoffsData.sort((a, b) => a.km - b.km);
+
+        if(cutoffsData.length === 0) {
+            container.innerHTML = '<div style="color:var(--text-muted); font-size: 0.9rem; margin-bottom:10px;">Ten bieg nie ma dodanych jeszcze żadnych punktów kontrolnych. Kliknij przycisk poniżej, aby zacząć je wpisywać.</div>';
+        }
 
         cutoffsData.forEach((co, index) => {
             const div = document.createElement('div');
@@ -466,7 +494,7 @@
 
     function addCutoffRow() {
         const lastKm = cutoffsData.length > 0 ? cutoffsData[cutoffsData.length - 1].km + 5 : 10;
-        cutoffsData.push({ km: lastKm, time: "12:00", gain: 100, loss: 100 });
+        cutoffsData.push({ km: lastKm, time: "12:00", gain: 0, loss: 0 });
         
         isPreventingAutoSave = true;
         updatePitstopSelectOptions();
@@ -505,6 +533,11 @@
 
         const resultsContainer = document.getElementById('route-results');
         resultsContainer.innerHTML = '';
+
+        if(cutoffsData.length === 0) {
+            resultsContainer.innerHTML = '<div style="color:var(--text-muted); text-align:center; padding:20px; background: rgba(255,255,255,0.02); border-radius: 8px;">Dodaj punkty kontrolne (limity) w menu wyżej, aby zobaczyć plan biegu.</div>';
+            return;
+        }
 
         let currentTimeInMinutes = timeToMinutes(startTimeStr);
         let previousKm = 0;
